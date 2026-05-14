@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kat & Nejaun — Daily Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #111814;
+    --bg-card:   #192019;
+    --bg-card2:  #141a14;
+    --border:    rgba(197,160,89,0.18);
+    --border-s:  rgba(197,160,89,0.09);
+    --gold:      #C5A059;
+    --gold-dim:  rgba(197,160,89,0.45);
+    --gold-xdim: rgba(197,160,89,0.18);
+    --cream:     #E8DFC8;
+    --cream-dim: rgba(232,223,200,0.45);
+    --cream-x:   rgba(232,223,200,0.22);
+    --cream-xx:  rgba(232,223,200,0.1);
+    --kat:       #C5A059;
+    --nejaun:    #7BAFD4;
+    --nejaun-dim:rgba(123,175,212,0.55);
+    --sage:      #6a9e82;
+    --ff-serif:  'Playfair Display', Georgia, serif;
+    --ff-sans:   'DM Sans', sans-serif;
+    --ff-mono:   'JetBrains Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--ff-sans);
+    font-weight: 300;
+    overflow: hidden;
+  }
+
+  /* subtle noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* ambient glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+  }
+  .orb1 { width: 420px; height: 420px; background: rgba(30,58,38,0.5); top: -120px; left: -80px; }
+  .orb2 { width: 280px; height: 280px; background: rgba(197,160,89,0.07); bottom: -60px; right: 80px; }
+  .orb3 { width: 200px; height: 200px; background: rgba(123,175,212,0.05); top: 30%; right: -40px; }
+
+  .board {
+    position: relative;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1.65fr 1fr;
+    grid-template-rows: 1fr;
+    gap: 0;
+    padding: 28px 30px;
+    gap: 0 36px;
+  }
+
+  /* ── LEFT COLUMN ── */
+  .col-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    min-width: 0;
+  }
+
+  /* hero */
+  .hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 18px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .date-label {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 6px;
+  }
+
+  .clock {
+    font-family: var(--ff-serif);
+    font-size: clamp(56px, 7vw, 80px);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -3px;
+    color: var(--gold);
+  }
+
+  .clock-seconds {
+    font-size: 0.35em;
+    vertical-align: super;
+    color: var(--gold-dim);
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .greeting {
+    font-family: var(--ff-serif);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--cream-dim);
+    margin-top: 6px;
+  }
+
+  .weather-block { text-align: right; }
+  .weather-temp {
+    font-family: var(--ff-mono);
+    font-size: clamp(36px, 4.5vw, 50px);
+    font-weight: 300;
+    color: var(--cream);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .weather-desc { font-size: 12px; color: var(--cream-dim); margin-top: 4px; }
+  .weather-loc {
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cream-x);
+    margin-top: 2px;
+  }
+
+  /* section header */
+  .hdr {
+    font-family: var(--ff-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 10px;
+  }
+
+  /* legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    color: var(--cream-x);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .leg-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* calendar rows */
+  .cal-list { display: flex; flex-direction: column; }
+  .cal-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 0.5px solid var(--cream-xx);
+    animation: fadeUp 0.5s ease both;
+  }
+  .cal-row:last-child { border: none; }
+  .cal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .cal-time {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    color: var(--cream-x);
+    min-width: 38px;
+    flex-shrink: 0;
+  }
+  .cal-name { font-size: 15px; color: var(--cream); font-weight: 400; }
+  .cal-tag {
+    margin-left: auto;
+    font-family: var(--ff-mono);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+  .tag-now { background: rgba(197,160,89,0.15); color: var(--gold); border: 0.5px solid rgba(197,160,89,0.3); }
+  .tag-soon { background: rgba(123,175,212,0.12); color: var(--nejaun); border: 0.5px solid rgba(123,175,212,0.25); }
+
+  /* gold divider */
+  .gl { height: 0.5px; background: var(--border); width: 100%; margin: 16px 0; }
+
+  /* menu */
+  .menu-list { display: flex; flex-direction: column; }
+  .menu-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 0.5px solid var(--cream-xx);
+  }
+  .menu-row:last-child { border: none; }
+  .menu-day {
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cream-x);
+    min-width: 32px;
+  }
+  .menu-meal { font-size: 14px; color: var(--cream); }
+  .menu-tonight { color: var(--gold); font-style: italic; }
+
+  /* ── RIGHT COLUMN ── */
+  .col-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0;
+    min-width: 0;
+  }
+
+  /* recordatorios */
+  .pickup-list { display: flex; flex-direction: column; }
+  .pickup-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 0.5px solid var(--cream-xx);
+  }
+  .pickup-row:last-child { border: none; }
+  .pickup-name { font-size: 14px; color: var(--cream); }
+  .pickup-time {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    color: var(--sage);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .pickup-empty { font-size: 12px; color: var(--cream-x); }
+
+  /* photo */
+  .photo-box {
+    flex: 1;
+    border-radius: 10px;
+    background: var(--gold-xdim);
+    border: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 14px 0;
+    min-height: 160px;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-placeholder {
+    text-align: center;
+    color: var(--gold-dim);
+  }
+  .photo-placeholder svg { width: 24px; height: 24px; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
+  .photo-placeholder span {
+    font-family: var(--ff-mono);
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  /* chores */
+  .chore-list { display: flex; flex-direction: column; gap: 5px; }
+  .chore {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 0;
+  }
+  .chore-circle {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(197,160,89,0.35);
+    flex-shrink: 0;
+  }
+  .chore-done {
+    background: rgba(197,160,89,0.15);
+    border-color: rgba(197,160,89,0.4);
+  }
+  .chore span { font-size: 13px; color: var(--cream); }
+  .chore.done span { color: var(--cream-x); text-decoration: line-through; }
+
+  /* household */
+  .budget-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 5px;
+  }
+  .budget-label { color: var(--cream-dim); }
+  .budget-pct { font-family: var(--ff-mono); font-size: 10px; color: var(--gold); }
+
+  .seg-row { display: flex; gap: 2px; margin-bottom: 4px; }
+  .seg { height: 4px; flex: 1; border-radius: 2px; background: var(--cream-xx); }
+  .seg.on { background: var(--gold); }
+  .seg.half { background: rgba(197,160,89,0.35); }
+
+  .budget-remaining {
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    color: var(--cream-x);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .rent-block {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .rent-num {
+    font-family: var(--ff-mono);
+    font-size: 28px;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .rent-label {
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream-x);
+  }
+
+  /* footer */
+  .footer {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-family: var(--ff-serif);
+    font-style: italic;
+    font-size: 11px;
+    color: var(--cream-x);
+    letter-spacing: 0.03em;
+    padding-top: 12px;
+    border-top: 0.5px solid var(--border-s);
+    margin-top: 14px;
+    animation: fadeUp 1s ease both;
+    animation-delay: 0.8s;
+  }
+
+  /* live pulse */
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .live { width: 5px; height: 5px; border-radius: 50%; background: var(--sage); display: inline-block; margin-right: 5px; vertical-align: middle; animation: pulse 2s infinite; }
+
+  /* animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .col-left  { animation: fadeUp 0.5s ease both; }
+  .col-right { animation: fadeUp 0.5s ease both; animation-delay: 0.15s; }
+  .cal-row:nth-child(1){animation-delay:0.2s;}
+  .cal-row:nth-child(2){animation-delay:0.28s;}
+  .cal-row:nth-child(3){animation-delay:0.36s;}
+  .cal-row:nth-child(4){animation-delay:0.44s;}
+  .cal-row:nth-child(5){animation-delay:0.52s;}
+
+  /* live clock */
+  #clock-time { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="board">
+
+  <!-- ═══ LEFT COLUMN ═══ -->
+  <div class="col-left">
+
+    <!-- HERO: Clock + Weather -->
+    <div class="hero">
+      <div>
+        <div class="date-label" id="date-label">Wednesday, May 7</div>
+        <div class="clock" id="clock-time">8:42<span class="clock-seconds" id="clock-secs">00</span></div>
+        <div class="greeting" id="greeting">Good morning</div>
+      </div>
+      <div class="weather-block">
+        <div class="weather-temp">72°</div>
+        <div class="weather-desc">Partly cloudy</div>
+        <div class="weather-loc">Elizabeth · NJ</div>
+      </div>
+    </div>
+
+    <!-- TODAY -->
+    <div class="hdr">T O D A Y</div>
+    <div class="legend">
+      <div class="leg"><span class="leg-dot" style="background:var(--kat);"></span>Kat</div>
+      <div class="leg"><span class="leg-dot" style="background:var(--nejaun);"></span>Nejaun</div>
+      <div class="leg"><span class="leg-dot" style="background:var(--cream-x);border:0.5px solid var(--cream-dim);"></span>Home</div>
+    </div>
+    <div class="cal-list">
+      <div class="cal-row">
+        <span class="cal-dot" style="background:var(--kat);"></span>
+        <span class="cal-time">07:00</span>
+        <span class="cal-name">Gym</span>
+        <span class="cal-tag tag-now">Now</span>
+      </div>
+      <div class="cal-row">
+        <span class="cal-dot" style="background:var(--nejaun);"></span>
+        <span class="cal-time">07:00</span>
+        <span class="cal-name">Gym · Nejaun</span>
+      </div>
+      <div class="cal-row">
+        <span class="cal-dot" style="background:var(--kat);"></span>
+        <span class="cal-time">10:00</span>
+        <span class="cal-name">Study block</span>
+      </div>
+      <div class="cal-row">
+        <span class="cal-dot" style="background:var(--nejaun);"></span>
+        <span class="cal-time">14:00</span>
+        <span class="cal-name">Pickup — John</span>
+        <span class="cal-tag tag-soon">Soon</span>
+      </div>
+      <div class="cal-row">
+        <span class="cal-dot" style="background:var(--kat);"></span>
+        <span class="cal-time">19:00</span>
+        <span class="cal-name">Date night</span>
+      </div>
+    </div>
+
+    <div class="gl"></div>
+
+    <!-- THIS WEEK MENU -->
+    <div class="hdr">T H I S &nbsp; W E E K</div>
+    <div class="menu-list" id="menu-list">
+      <div class="menu-row"><span class="menu-day">MON</span><span class="menu-meal">Pasta arrabiata</span></div>
+      <div class="menu-row"><span class="menu-day">TUE</span><span class="menu-meal">Grilled chicken</span></div>
+      <div class="menu-row"><span class="menu-day">WED</span><span class="menu-meal menu-tonight">Tonight — TBD</span></div>
+      <div class="menu-row"><span class="menu-day">THU</span><span class="menu-meal">Stir fry</span></div>
+      <div class="menu-row"><span class="menu-day">FRI</span><span class="menu-meal">Date night out</span></div>
+    </div>
+
+  </div>
+
+  <!-- ═══ RIGHT COLUMN ═══ -->
+  <div class="col-right">
+
+    <!-- RECORDATORIOS -->
+    <div class="hdr">
+      <span class="live"></span>R E C O R D A T O R I O S
+    </div>
+    <div class="pickup-list" id="pickup-list">
+      <div class="pickup-row">
+        <span class="pickup-name">John · boots</span>
+        <span class="pickup-time">14:00</span>
+      </div>
+      <div class="pickup-row">
+        <span class="pickup-name">Maria · jacket</span>
+        <span class="pickup-time">17:30</span>
+      </div>
+      <div class="pickup-row" style="border:none;">
+        <span class="pickup-empty">Nothing else today</span>
+      </div>
+    </div>
+
+    <!-- PHOTOS -->
+    <div class="photo-box">
+      <div class="photo-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span>Slideshow</span>
+      </div>
+    </div>
+
+    <!-- CHORES -->
+    <div class="hdr">C H O R E S</div>
+    <div class="chore-list" id="chore-list">
+      <div class="chore"><div class="chore-circle"></div><span>Vacuum living room</span></div>
+      <div class="chore"><div class="chore-circle"></div><span>Take out trash</span></div>
+      <div class="chore done"><div class="chore-circle chore-done"></div><span>Dishes</span></div>
+      <div class="chore"><div class="chore-circle"></div><span>Wipe counters</span></div>
+    </div>
+
+    <div class="gl"></div>
+
+    <!-- HOUSEHOLD -->
+    <div class="hdr">H O U S E H O L D</div>
+    <div class="budget-header">
+      <span class="budget-label" id="budget-label">Groceries · $247 of $400</span>
+      <span class="budget-pct" id="budget-pct">62%</span>
+    </div>
+    <div class="seg-row" id="seg-row">
+      <div class="seg on"></div><div class="seg on"></div><div class="seg on"></div>
+      <div class="seg on"></div><div class="seg on"></div><div class="seg on"></div>
+      <div class="seg half"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div>
+    </div>
+    <div class="budget-remaining" id="budget-remaining">$153 remaining this week</div>
+    <div class="rent-block">
+      <span class="rent-num" id="rent-num">8</span>
+      <span class="rent-label">days until rent</span>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- FOOTER spans full width outside grid — appended inside board via JS -->
+<div style="position:fixed;bottom:16px;left:0;right:0;z-index:2;text-align:center;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:11px;color:rgba(232,223,200,0.2);letter-spacing:0.03em;border-top:0.5px solid rgba(197,160,89,0.1);padding-top:10px;margin:0 30px;" id="dont-forget">
+  "Call the landlord back today — Nejaun"
+</div>
+
+<script>
+  // ── LIVE CLOCK ──
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock-time').childNodes[0].nodeValue = h + ':' + m;
+    document.getElementById('clock-secs').textContent = s;
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const d = now.getDay(), mo = now.getMonth(), day = now.getDate();
+    document.getElementById('date-label').textContent = days[d] + ', ' + months[mo] + ' ' + day;
+    const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting').textContent = greet;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── GOOGLE SHEETS LIVE DATA ──
+  const SHEET_ID = '15FMtK53Or9DLh1RF67Ey0tXHUh5mUNsl_g2imvlgFYI';
+  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1`;
+
+  function parseCSV(text) {
+    const data = {};
+    const lines = text.trim().split('\n').slice(1); // skip header
+    lines.forEach(line => {
+      const parts = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+      const clean = parts.map(p => p.replace(/^"|"$/g,'').trim());
+      if (clean[1] && clean[2] !== undefined) data[clean[1]] = clean[2];
+    });
+    return data;
+  }
+
+  function updateDashboard(data) {
+    // RECORDATORIOS
+    const pickups = [];
+    for (let i = 1; i <= 3; i++) {
+      const name = data[`pickup_${i}_name`];
+      const time = data[`pickup_${i}_time`];
+      if (name) pickups.push({ name, time });
+    }
+    const pList = document.getElementById('pickup-list');
+    if (pList) {
+      pList.innerHTML = pickups.length
+        ? pickups.map(p => `
+            <div class="pickup-row">
+              <span class="pickup-name">${p.name}</span>
+              <span class="pickup-time">${p.time}</span>
+            </div>`).join('')
+        : '<div class="pickup-row" style="border:none;"><span class="pickup-empty">Nothing today</span></div>';
+    }
+
+    // MENU
+    const days = ['monday','tuesday','wednesday','thursday','friday'];
+    const dayLabels = ['MON','TUE','WED','THU','FRI'];
+    const mList = document.getElementById('menu-list');
+    if (mList) {
+      mList.innerHTML = days.map((d, i) => {
+        const meal = data[d] || '—';
+        const isToday = new Date().getDay() === i + 1;
+        return `<div class="menu-row">
+          <span class="menu-day">${dayLabels[i]}</span>
+          <span class="menu-meal ${isToday ? 'menu-tonight' : ''}">${meal}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // CHORES
+    const cList = document.getElementById('chore-list');
+    if (cList) {
+      const chores = [];
+      for (let i = 1; i <= 6; i++) {
+        const name = data[`chore_${i}`];
+        const done = data[`chore_${i}_done`] === 'true';
+        if (name) chores.push({ name, done });
+      }
+      cList.innerHTML = chores.map(c => `
+        <div class="chore ${c.done ? 'done' : ''}">
+          <div class="chore-circle ${c.done ? 'chore-done' : ''}"></div>
+          <span>${c.name}</span>
+        </div>`).join('');
+    }
+
+    // HOUSEHOLD
+    const spent = parseFloat(data['grocery_spent']) || 0;
+    const budget = parseFloat(data['grocery_budget']) || 400;
+    const pct = Math.round((spent / budget) * 100);
+    const remaining = budget - spent;
+    const rentDays = data['rent_days'] || '—';
+
+    const bLabel = document.getElementById('budget-label');
+    const bPct = document.getElementById('budget-pct');
+    const bRemain = document.getElementById('budget-remaining');
+    const rentNum = document.getElementById('rent-num');
+    if (bLabel) bLabel.textContent = `Groceries · $${spent} of $${budget}`;
+    if (bPct) bPct.textContent = pct + '%';
+    if (bRemain) bRemain.textContent = `$${remaining} remaining this week`;
+    if (rentNum) rentNum.textContent = rentDays;
+
+    // Segmented bar
+    const segRow = document.getElementById('seg-row');
+    if (segRow) {
+      const total = 10;
+      const filled = Math.floor((spent / budget) * total);
+      const half = (spent / budget) * total - filled > 0.3 ? 1 : 0;
+      segRow.innerHTML = Array.from({length: total}, (_, i) =>
+        `<div class="seg ${i < filled ? 'on' : i === filled && half ? 'half' : ''}"></div>`
+      ).join('');
+    }
+
+    // DON'T FORGET footer
+    const footer = document.getElementById('dont-forget');
+    if (footer && data['message']) footer.textContent = `"${data['message']}"`;
+  }
+
+  function fetchData() {
+    fetch(SHEET_URL)
+      .then(r => r.text())
+      .then(text => updateDashboard(parseCSV(text)))
+      .catch(e => console.log('Sheet fetch error:', e));
+  }
+
+  fetchData();
+  setInterval(fetchData, 60000); // refresh every minute
+</script>
+</body>
+</html>
